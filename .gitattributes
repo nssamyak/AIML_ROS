@@ -1,0 +1,9 @@
+# Keep Linux line endings for scripts so they run on Linux/macOS/Docker
+# even when the repo is checked out on Windows.
+* text=auto eol=lf
+*.png binary
+*.gif binary
+*.npz binary
+*.dae binary
+*.stl binary
+*.ps1 text eol=crlf

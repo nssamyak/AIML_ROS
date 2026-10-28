@@ -1,0 +1,15 @@
+# Kiwi drive geometry. Keep in sync with hb_description/urdf/hb_bot.urdf.xacro
+# and firmware/esp32_kiwi_base/config.h.
+kiwi_drive:
+  ros__parameters:
+    wheel_radius: 0.019          # m
+    wheel_base_radius: 0.052     # m, robot centre to wheel
+    wheel_angles_deg: [60.0, -60.0, 180.0]   # left, right, back (CCW from forward)
+    wheel_joints: [rim_left_joint, rim_right_joint, rim_back_joint]
+    max_wheel_speed: 30.0        # rad/s, all wheels are scaled down together above this
+    cmd_timeout: 0.5             # s, stop if cmd_vel goes quiet
+    command_rate: 50.0           # Hz
+    odom_frame: odom
+    base_frame: base_footprint
+    publish_tf: true
+    use_stamped_cmd_vel: false   # set true for Nav2 Kilted+ (TwistStamped)

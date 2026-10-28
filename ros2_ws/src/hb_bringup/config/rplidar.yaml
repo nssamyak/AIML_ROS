@@ -1,0 +1,8 @@
+# Slamtec RPLidar (A1 / A2 / C1 ...). Port and baud are set from robot.launch.py.
+rplidar:
+  ros__parameters:
+    channel_type: serial
+    frame_id: lidar_link
+    inverted: false
+    angle_compensate: true
+    scan_mode: Standard

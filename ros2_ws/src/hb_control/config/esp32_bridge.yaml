@@ -1,0 +1,7 @@
+esp32_bridge:
+  ros__parameters:
+    port: /dev/ttyUSB0           # often /dev/ttyACM0 or /dev/ttyUSB0; see docs/hardware.md for a udev rule
+    baud: 115200
+    wheel_joints: [rim_left_joint, rim_right_joint, rim_back_joint]
+    cmd_timeout: 0.5
+    send_rate: 20.0

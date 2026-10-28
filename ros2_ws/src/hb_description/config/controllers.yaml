@@ -1,0 +1,21 @@
+# ros2_control controllers used in Gazebo.
+# On the real robot the ESP32 bridge offers the same two topics instead:
+#   /joint_states                          (wheel positions and speeds)
+#   /wheel_velocity_controller/commands    (wheel speed targets, rad/s)
+controller_manager:
+  ros__parameters:
+    update_rate: 100
+
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+
+    wheel_velocity_controller:
+      type: velocity_controllers/JointGroupVelocityController
+
+wheel_velocity_controller:
+  ros__parameters:
+    # Order matters: the kiwi_drive node sends [left, right, back]
+    joints:
+      - rim_left_joint
+      - rim_right_joint
+      - rim_back_joint

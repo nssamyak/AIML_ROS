@@ -1,0 +1,73 @@
+<?xml version="1.0"?>
+<!--
+  2D lidar on a small deck held up by 4 standoffs.
+  Roughly the size of an RPLidar A1/C1. The lidar_link origin is the scan
+  plane, which is the frame_id of the /scan messages.
+-->
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <xacro:macro name="standoff" params="angle">
+    <visual>
+      <origin xyz="${0.04*cos(angle)} ${0.04*sin(angle)} ${standoff_height/2}" rpy="0 0 0"/>
+      <geometry><cylinder radius="0.003" length="${standoff_height}"/></geometry>
+      <material name="standoff_gold"/>
+    </visual>
+  </xacro:macro>
+
+  <xacro:macro name="lidar" params="parent mount_z yaw">
+
+    <!-- Deck the lidar is bolted to -->
+    <joint name="lidar_mount_joint" type="fixed">
+      <parent link="${parent}"/>
+      <child link="lidar_mount_link"/>
+      <origin xyz="0 0 ${mount_z}" rpy="0 0 0"/>
+    </joint>
+
+    <link name="lidar_mount_link">
+      <xacro:standoff angle="${radians(45)}"/>
+      <xacro:standoff angle="${radians(135)}"/>
+      <xacro:standoff angle="${radians(225)}"/>
+      <xacro:standoff angle="${radians(315)}"/>
+      <visual>
+        <origin xyz="0 0 ${standoff_height + deck_thickness/2}" rpy="0 0 0"/>
+        <geometry><cylinder radius="${deck_radius}" length="${deck_thickness}"/></geometry>
+        <material name="deck_black"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 ${standoff_height + deck_thickness/2}" rpy="0 0 0"/>
+        <geometry><cylinder radius="${deck_radius}" length="${deck_thickness}"/></geometry>
+      </collision>
+      <xacro:inertial_cylinder mass="0.03" radius="${deck_radius}" length="${deck_thickness}"
+                               xyz="0 0 ${standoff_height + deck_thickness/2}"/>
+    </link>
+
+    <!-- The lidar itself -->
+    <joint name="lidar_joint" type="fixed">
+      <parent link="lidar_mount_link"/>
+      <child link="lidar_link"/>
+      <origin xyz="${lidar_x} ${lidar_y} ${standoff_height + deck_thickness + lidar_scan_offset}"
+              rpy="0 0 ${yaw}"/>
+    </joint>
+
+    <link name="lidar_link">
+      <visual>
+        <origin xyz="0 0 ${lidar_height/2 - lidar_scan_offset}" rpy="0 0 0"/>
+        <geometry><cylinder radius="${lidar_radius}" length="${lidar_height}"/></geometry>
+        <material name="lidar_dark"/>
+      </visual>
+      <!-- marker showing the lidar's 0 degree direction -->
+      <visual>
+        <origin xyz="${lidar_radius - 0.004} 0 ${lidar_height - lidar_scan_offset}" rpy="0 0 0"/>
+        <geometry><box size="0.008 0.004 0.002"/></geometry>
+        <material name="front_orange"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 ${lidar_height/2 - lidar_scan_offset}" rpy="0 0 0"/>
+        <geometry><cylinder radius="${lidar_radius}" length="${lidar_height}"/></geometry>
+      </collision>
+      <xacro:inertial_cylinder mass="${lidar_mass}" radius="${lidar_radius}" length="${lidar_height}"
+                               xyz="0 0 ${lidar_height/2 - lidar_scan_offset}"/>
+    </link>
+
+  </xacro:macro>
+</robot>

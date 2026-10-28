@@ -1,0 +1,15 @@
+frontier_explorer:
+  ros__parameters:
+    global_frame: map
+    robot_frame: base_footprint
+    update_rate: 1.0             # Hz, how often frontiers are recomputed
+    min_frontier_size: 0.25      # m, ignore shorter frontiers (noise, corners)
+    clearance: 0.12              # m, goals stay this far from walls (> robot radius)
+    distance_weight: 1.0         # score = distance_weight * distance - size_weight * size
+    size_weight: 0.5
+    blacklist_radius: 0.3        # m, don't retry within this distance of a tried goal
+    progress_timeout: 15.0       # s, give up if the robot stops getting closer
+    frontier_lost_radius: 0.25   # m, cancel the goal if its frontier has been mapped
+    empty_checks_to_finish: 3    # updates with no frontiers before we call it done
+    return_to_start: true
+    save_map_path: ""            # e.g. "/home/pi/maps/arena" to save when done

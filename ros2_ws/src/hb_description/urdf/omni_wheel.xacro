@@ -1,0 +1,98 @@
+<?xml version="1.0"?>
+<!--
+  Omni wheel = driven rim + 8 passive rollers (two staggered rows of 4).
+
+  The rim joint axis is the local z axis, which the joint origin points
+  radially INWARD (towards the robot centre). So a positive wheel speed
+  turns the wheel clockwise when you look at it from outside the robot.
+  The firmware and the kinematics use the same convention.
+-->
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <xacro:property name="roller_offset"  value="0.01355"/>  <!-- rim axis to roller axis -->
+  <xacro:property name="roller_row_gap" value="0.0055"/>   <!-- each row sits +-this along the axle -->
+  <xacro:property name="roller_radius"  value="0.0051"/>
+  <xacro:property name="roller_length"  value="0.0138"/>
+  <xacro:property name="roller_mass"    value="0.00113845"/>
+  <xacro:property name="roller_names"   value="${['e', 'ne', 'n', 'nw', 'w', 'sw', 's', 'se']}"/>
+
+  <!-- One passive roller, number k (0..7), every 45 degrees around the rim -->
+  <xacro:macro name="omni_roller" params="wheel k">
+    <xacro:property name="a" value="${k * pi / 4}"/>
+    <xacro:property name="roller" value="roller_${roller_names[k]}_rim_${wheel}"/>
+
+    <link name="${roller}_link">
+      <inertial>
+        <mass value="${roller_mass}"/>
+        <inertia ixx="2.53776e-08" ixy="0" ixz="0" iyy="2.53776e-08" iyz="0" izz="1.47666e-08"/>
+      </inertial>
+      <visual>
+        <xacro:if value="${use_meshes}">
+          <geometry><mesh filename="${mesh_dir}/roller.stl"/></geometry>
+        </xacro:if>
+        <xacro:unless value="${use_meshes}">
+          <geometry><cylinder radius="${roller_radius}" length="${roller_length}"/></geometry>
+        </xacro:unless>
+        <material name="roller_black"/>
+      </visual>
+      <collision>
+        <geometry><cylinder radius="${roller_radius}" length="${roller_length}"/></geometry>
+      </collision>
+    </link>
+
+    <!-- Rollers spin freely in simulation; on the real robot TF only needs them fixed -->
+    <joint name="${roller}_joint" type="${'continuous' if sim_mode else 'fixed'}">
+      <parent link="rim_${wheel}_link"/>
+      <child link="${roller}_link"/>
+      <origin xyz="${roller_offset*cos(a)} ${roller_offset*sin(a)} ${roller_row_gap if k % 2 == 0 else -roller_row_gap}"
+              rpy="${-pi/2} 0 ${a}"/>
+      <xacro:if value="${sim_mode}">
+        <axis xyz="0 0 1"/>
+      </xacro:if>
+    </joint>
+
+    <gazebo reference="${roller}_link">
+      <mu1>1.0</mu1>
+      <mu2>1.0</mu2>
+    </gazebo>
+
+    <xacro:if value="${k &lt; 7}">
+      <xacro:omni_roller wheel="${wheel}" k="${k + 1}"/>
+    </xacro:if>
+  </xacro:macro>
+
+  <!--
+    name     left / right / back
+    angle    position around the robot, CCW from +x (radians)
+  -->
+  <xacro:macro name="omni_wheel" params="name angle material">
+    <link name="rim_${name}_link">
+      <inertial>
+        <origin xyz="0 0 -0.000343"/>
+        <mass value="0.00835758"/>
+        <inertia ixx="6.63684e-07" ixy="0" ixz="0" iyy="6.63684e-07" iyz="0" izz="9.40333e-07"/>
+      </inertial>
+      <visual>
+        <xacro:if value="${use_meshes}">
+          <geometry><mesh filename="${mesh_dir}/rim.stl"/></geometry>
+        </xacro:if>
+        <xacro:unless value="${use_meshes}">
+          <geometry><cylinder radius="${roller_offset}" length="0.004"/></geometry>
+        </xacro:unless>
+        <material name="${material}"/>
+      </visual>
+      <!-- no rim collision: only the rollers touch the ground -->
+    </link>
+
+    <joint name="rim_${name}_joint" type="continuous">
+      <parent link="base_link"/>
+      <child link="rim_${name}_link"/>
+      <origin xyz="${wheel_base_radius*cos(angle)} ${wheel_base_radius*sin(angle)} 0"
+              rpy="${pi/2} 0 ${angle - pi/2}"/>
+      <axis xyz="0 0 1"/>
+    </joint>
+
+    <xacro:omni_roller wheel="${name}" k="0"/>
+  </xacro:macro>
+
+</robot>

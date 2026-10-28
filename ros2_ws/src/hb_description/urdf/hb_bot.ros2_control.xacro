@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<!--
+  ros2_control interface for Gazebo.
+  The three rims take velocity commands (rad/s). The passive rollers are
+  listed state-only so joint_state_broadcaster publishes them and RViz can
+  draw them spinning.
+-->
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <xacro:macro name="driven_joint" params="name">
+    <joint name="${name}">
+      <command_interface name="velocity">
+        <param name="min">-40</param>
+        <param name="max">40</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+  </xacro:macro>
+
+  <xacro:macro name="passive_rollers" params="wheel k">
+    <joint name="roller_${roller_names[k]}_rim_${wheel}_joint">
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    <xacro:if value="${k &lt; 7}">
+      <xacro:passive_rollers wheel="${wheel}" k="${k + 1}"/>
+    </xacro:if>
+  </xacro:macro>
+
+  <ros2_control name="GazeboSystem" type="system">
+    <hardware>
+      <plugin>gz_ros2_control/GazeboSimSystem</plugin>
+    </hardware>
+    <xacro:driven_joint name="rim_left_joint"/>
+    <xacro:driven_joint name="rim_right_joint"/>
+    <xacro:driven_joint name="rim_back_joint"/>
+    <xacro:passive_rollers wheel="left" k="0"/>
+    <xacro:passive_rollers wheel="right" k="0"/>
+    <xacro:passive_rollers wheel="back" k="0"/>
+  </ros2_control>
+
+</robot>

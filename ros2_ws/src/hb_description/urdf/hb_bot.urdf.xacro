@@ -1,0 +1,118 @@
+<?xml version="1.0"?>
+<!--
+  HB bot: 3-wheel holonomic (kiwi) drive robot with a 2D lidar on top.
+
+  Frames (REP-103: x forward, y left, z up)
+    base_footprint   on the ground, centre of the robot
+    base_link        centre of the robot at wheel-axle height
+    rim_<name>_link  omni wheels, placed at WHEEL_ANGLE around the centre
+    lidar_mount_link small deck on standoffs
+    lidar_link       the lidar scan plane (LaserScan frame_id)
+
+  Arguments
+    sim_mode         true  -> Gazebo: passive rollers spin, gz_ros2_control + lidar sensor
+                     false -> real robot: rollers fixed, no simulator plugins
+    use_meshes       true  -> use the original bot.dae / rim.stl / roller.stl visuals
+                              (copy them into hb_description/meshes first)
+                     false -> simple shapes (works out of the box)
+    controllers_file ros2_control controller config used by Gazebo
+    lidar_yaw        rotate the lidar if it is mounted turned (radians)
+-->
+<robot name="hb_bot" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <xacro:arg name="sim_mode" default="true"/>
+  <xacro:arg name="use_meshes" default="false"/>
+  <xacro:arg name="controllers_file" default="$(find hb_description)/config/controllers.yaml"/>
+  <xacro:arg name="lidar_yaw" default="0.0"/>
+
+  <xacro:property name="sim_mode" value="$(arg sim_mode)"/>
+  <xacro:property name="use_meshes" value="$(arg use_meshes)"/>
+
+  <!-- ===================== Robot dimensions (edit these for your build) ===================== -->
+  <!-- Must match the kiwi_drive parameters in hb_control/config/kiwi_drive.yaml -->
+  <xacro:property name="wheel_radius"      value="0.019"/>   <!-- m, roller outer radius -->
+  <xacro:property name="wheel_base_radius" value="0.052"/>   <!-- m, robot centre to wheel centre -->
+  <!-- Wheel positions measured CCW from the robot's forward (+x) axis -->
+  <xacro:property name="left_wheel_angle"  value="${radians(60)}"/>
+  <xacro:property name="right_wheel_angle" value="${radians(-60)}"/>
+  <xacro:property name="back_wheel_angle"  value="${radians(180)}"/>
+
+  <xacro:property name="chassis_radius"    value="0.075"/>
+  <xacro:property name="chassis_thickness" value="0.006"/>
+  <xacro:property name="chassis_z"         value="0.029"/>   <!-- plate centre above axle -->
+  <xacro:property name="base_mass"         value="0.15"/>
+
+  <xacro:property name="standoff_height"   value="0.040"/>
+  <xacro:property name="deck_radius"       value="0.050"/>
+  <xacro:property name="deck_thickness"    value="0.006"/>
+
+  <xacro:property name="lidar_radius"      value="0.035"/>
+  <xacro:property name="lidar_height"      value="0.040"/>
+  <xacro:property name="lidar_scan_offset" value="0.025"/>   <!-- scan plane above lidar base -->
+  <xacro:property name="lidar_mass"        value="0.10"/>
+  <xacro:property name="lidar_x"           value="0.0"/>
+  <xacro:property name="lidar_y"           value="0.0"/>
+
+  <xacro:property name="mesh_dir" value="package://hb_description/meshes"/>
+
+  <xacro:include filename="$(find hb_description)/urdf/inertial_macros.xacro"/>
+  <xacro:include filename="$(find hb_description)/urdf/materials.xacro"/>
+  <xacro:include filename="$(find hb_description)/urdf/omni_wheel.xacro"/>
+  <xacro:include filename="$(find hb_description)/urdf/lidar.xacro"/>
+
+  <!-- ===================== Base ===================== -->
+  <link name="base_footprint"/>
+
+  <joint name="base_footprint_joint" type="fixed">
+    <parent link="base_footprint"/>
+    <child link="base_link"/>
+    <origin xyz="0 0 ${wheel_radius}" rpy="0 0 0"/>
+  </joint>
+
+  <link name="base_link">
+    <visual>
+      <xacro:if value="${use_meshes}">
+        <!-- The original mesh was modelled with its front along +y, so turn it to face +x -->
+        <origin xyz="0 0 0" rpy="0 0 ${-pi/2}"/>
+        <geometry><mesh filename="${mesh_dir}/bot.dae"/></geometry>
+      </xacro:if>
+      <xacro:unless value="${use_meshes}">
+        <origin xyz="0 0 ${chassis_z}" rpy="0 0 0"/>
+        <geometry><cylinder radius="${chassis_radius}" length="${chassis_thickness}"/></geometry>
+        <material name="chassis_grey"/>
+      </xacro:unless>
+    </visual>
+    <!-- Little arrow on the plate so students can see which way is forward -->
+    <visual>
+      <origin xyz="${chassis_radius - 0.012} 0 ${chassis_z + chassis_thickness/2}" rpy="0 0 0"/>
+      <geometry><box size="0.02 0.006 0.002"/></geometry>
+      <material name="front_orange"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 ${chassis_z}" rpy="0 0 0"/>
+      <geometry><cylinder radius="${chassis_radius}" length="${chassis_thickness}"/></geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="${base_mass}"/>
+      <inertia ixx="0.0004332" ixy="0" ixz="0" iyy="0.0004332" iyz="0" izz="0.0008214"/>
+    </inertial>
+  </link>
+
+  <!-- ===================== Omni wheels ===================== -->
+  <xacro:omni_wheel name="left"  angle="${left_wheel_angle}"  material="rim_red"/>
+  <xacro:omni_wheel name="right" angle="${right_wheel_angle}" material="rim_blue"/>
+  <xacro:omni_wheel name="back"  angle="${back_wheel_angle}"  material="rim_green"/>
+
+  <!-- ===================== Lidar ===================== -->
+  <xacro:lidar parent="base_link"
+               mount_z="${chassis_z + chassis_thickness/2}"
+               yaw="$(arg lidar_yaw)"/>
+
+  <!-- ===================== Simulation only ===================== -->
+  <xacro:if value="${sim_mode}">
+    <xacro:include filename="$(find hb_description)/urdf/hb_bot.ros2_control.xacro"/>
+    <xacro:include filename="$(find hb_description)/urdf/hb_bot.gazebo.xacro"/>
+  </xacro:if>
+
+</robot>
